@@ -1,75 +1,180 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// App.js
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const API_KEY = '52d00d6c681b49a8bfe299e63bdd02fd'; // Replace with your actual key
 
-export default function HomeScreen() {
+export default function App() {
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+
+  // Fetch articles from News API
+  useEffect(() => {
+    console.log('Fetching articles...'); // Log for debugging
+
+    axios
+      .get(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}`)
+      .then((res) => {
+        console.log('Articles fetched:', res.data.articles); // Log fetched data
+        setArticles(res.data.articles);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching articles:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleArticleSelect = (article) => {
+    setSelectedArticle(article);
+  };
+
+  const handleBackToHome = () => {
+    setSelectedArticle(null);
+  };
+
+  // If an article is selected, show details
+  if (selectedArticle) {
+    return (
+      <View style={styles.container}>
+        <ScrollView>
+          <Text style={styles.title}>{selectedArticle.title}</Text>
+          {selectedArticle.urlToImage && (
+            <Image source={{ uri: selectedArticle.urlToImage }} style={styles.image} />
+          )}
+          <Text style={styles.content}>{selectedArticle.content || selectedArticle.description}</Text>
+        </ScrollView>
+        <TouchableOpacity onPress={handleBackToHome} style={styles.button}>
+          <Text style={styles.buttonText}>Back to Home</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // If data is loading
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>Loading news...</Text>
+      </View>
+    );
+  }
+
+  // If no articles are available
+  if (!articles.length) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.noArticles}>No news articles available at the moment. Please try again later.</Text>
+      </View>
+    );
+  }
+
+  // Display list of articles in grid
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <View>
+        <Text style={styles.Title}> Latest News </Text>
+      </View>
+      <FlatList
+        data={articles}
+        keyExtractor={(item, index) => index.toString()}
+        numColumns={2} // This creates a grid layout with 2 columns
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => handleArticleSelect(item)} style={styles.card}>
+            {item.urlToImage && <Image source={{ uri: item.urlToImage }} style={styles.imagePreview} />}
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardDescription}>{item.description || 'No description available'}</Text>
+          </TouchableOpacity>
+        )}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
   },
-  stepContainer: {
-    gap: 8,
+  card: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    marginBottom: 16,
+    marginHorizontal: 8,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
+    padding: 16,
+  },
+  imagePreview: {
+    height: 200,
+    borderRadius: 8,
+    width: '100%',
+    marginBottom: 10,
+    resizeMode: 'cover',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  Title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    alignSelf:"center",
+    color: '#333',
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#333',
+    textAlign: 'center',
+  },
+  content: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#444',
+    marginBottom: 20,
+    textAlign: 'justify',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#4CAF50',
+    marginTop: 10,
+  },
+  noArticles: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    width: "40%",
+    marginTop: 20,
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
